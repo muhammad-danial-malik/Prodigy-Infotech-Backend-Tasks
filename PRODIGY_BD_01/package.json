@@ -1,5 +1,17 @@
 {
+  "name": "prodigy-bd-01",
+  "version": "1.0.0",
+  "description": "internship task for Prodigy BD",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "author": "Danial",
+  "license": "ISC",
   "dependencies": {
-    "dotenv": "^16.5.0"
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "uuid": "^11.1.0"
   }
 }
