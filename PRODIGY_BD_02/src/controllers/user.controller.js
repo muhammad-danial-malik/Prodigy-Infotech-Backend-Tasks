@@ -12,7 +12,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, users, "Users fetched successfully"));
+    .json(new ApiResponse(200, "Users fetched successfully", users));
 });
 
 export const getUserById = asyncHandler(async (req, res) => {
@@ -22,7 +22,7 @@ export const getUserById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  res.status(200).json(new ApiResponse(200, user, "User fetched successfully"));
+  res.status(200).json(new ApiResponse(200, "User fetched successfully", user));
 });
 
 export const createUser = asyncHandler(async (req, res) => {
@@ -32,7 +32,7 @@ export const createUser = asyncHandler(async (req, res) => {
 
   res
     .status(201)
-    .json(new ApiResponse(201, newUser, "User created successfully"));
+    .json(new ApiResponse(201, "User created successfully", newUser));
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
@@ -50,7 +50,7 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, updatedUser, "User updated successfully"));
+    .json(new ApiResponse(200, "User updated successfully", updatedUser));
 });
 
 export const deleteUser = asyncHandler(async (req, res) => {
@@ -62,5 +62,5 @@ export const deleteUser = asyncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, deletedUser, "User deleted successfully"));
+    .json(new ApiResponse(200, "User deleted successfully", deletedUser));
 });
