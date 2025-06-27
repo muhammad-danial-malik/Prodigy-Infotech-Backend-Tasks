@@ -1,14 +1,18 @@
 import mongoose from "mongoose";
 
-const Schema = new mongoose.Schema(
+const uerSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       require: true,
+      trim: true,
     },
     email: {
       type: String,
       require: true,
+      lowercase: true,
+      unique: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
     age: {
       type: Number,
@@ -18,6 +22,6 @@ const Schema = new mongoose.Schema(
   { timestamps: true }
 );
 
-const ModelName = mongoose.model("ModelName", Schema);
+const User = mongoose.model("User", uerSchema);
 
-export default ModelName;
+export default User;

@@ -1,24 +1,22 @@
-import { v4 as uuid } from "uuid";
-import { isValidUser } from "../utils/validate.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
-import users, { saveUsersToFile } from "../data/user.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import User from "../models/user.model.js";
 
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const userList = Array.from(users.values());
+  const users = await User.find();
 
-  if (userList.length === 0) {
+  if (users.length === 0) {
     throw new ApiError(404, "Users not found");
   }
 
   res
     .status(200)
-    .json(new ApiResponse(200, userList, "Users fetched successfully"));
+    .json(new ApiResponse(200, users, "Users fetched successfully"));
 });
 
 export const getUserById = asyncHandler(async (req, res) => {
-  const user = users.get(req.params.id);
+  const user = await User.findById(req.params.id);
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -30,15 +28,7 @@ export const getUserById = asyncHandler(async (req, res) => {
 export const createUser = asyncHandler(async (req, res) => {
   const { name, email, age } = req.body;
 
-  if (!isValidUser({ name, email, age })) {
-    throw new ApiError(400, "Invalid user data");
-  }
-
-  const id = uuid();
-  const newUser = { id, name, email, age };
-
-  users.set(id, newUser);
-  await saveUsersToFile();
+  const newUser = await User.create({ name, email, age });
 
   res
     .status(201)
@@ -46,21 +36,17 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  if (!users.has(id)) {
-    throw new ApiError(404, "User not found");
-  }
-
   const { name, email, age } = req.body;
 
-  if (!isValidUser({ name, email, age })) {
-    throw new ApiError(400, "Invalid user data");
-  }
+  const updatedUser = await User.findByIdAndUpdate(
+    req.params.id,
+    { name, email, age },
+    { new: true, runValidators: true }
+  );
 
-  const updatedUser = { id, name, email, age };
-  users.set(id, updatedUser);
-  await saveUsersToFile();
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
 
   res
     .status(200)
@@ -68,15 +54,11 @@ export const updateUser = asyncHandler(async (req, res) => {
 });
 
 export const deleteUser = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const deletedUser = await User.findByIdAndDelete(req.params.id);
 
-  if (!users.has(id)) {
+  if (!deletedUser) {
     throw new ApiError(404, "User not found");
   }
-
-  const deletedUser = users.get(id);
-  users.delete(id);
-  await saveUsersToFile();
 
   res
     .status(200)
