@@ -3,7 +3,6 @@ import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
 
-
 const cookiesOptions = {
   httpOnly: true,
   secure: true,
@@ -29,7 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   console.log("email", email);
 
-  if (username === "" || email === "" ||  password === "") {
+  if (username === "" || email === "" || password === "") {
     return ApiError(400, "All fields are required");
   }
 
@@ -55,7 +54,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(200, createdUser, "User registered successfully"));
+    .json(new ApiResponse(200, "User registered successfully", createdUser));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -90,11 +89,11 @@ const loginUser = asyncHandler(async (req, res) => {
     .cookie("refreshToken", refreshToken, cookiesOptions)
     .cookie("accessToken", accessToken, cookiesOptions)
     .json(
-      new ApiResponse(
-        200,
-        { user: loggedInUser, accessToken, refreshToken },
-        "User logged in successfully"
-      )
+      new ApiResponse(200, "User logged in successfully", {
+        user: loggedInUser,
+        accessToken,
+        refreshToken,
+      })
     );
 });
 
@@ -115,7 +114,33 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("refreshToken", cookiesOptions)
     .clearCookie("accessToken", cookiesOptions)
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
+    .json(new ApiResponse(200, "User logged out successfully", {}));
 });
 
-export { registerUser, loginUser, logoutUser };
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find().select("-password -refreshToken");
+
+  if (!users || users.length === 0) {
+    throw new ApiError(404, "No users found");
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "All users fetched successfully", users));
+});
+
+const getProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken"
+  );
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "User profile fetched successfully", user));
+});
+
+export { registerUser, loginUser, logoutUser, getAllUsers, getProfile };
