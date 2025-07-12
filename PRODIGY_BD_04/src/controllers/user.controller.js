@@ -23,38 +23,22 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
+// Invalidate cache when user data changes
 const registerUser = asyncHandler(async (req, res) => {
   const { username, email, password } = req.body;
-
-  console.log("email", email);
-
-  if (username === "" || email === "" || password === "") {
-    return ApiError(400, "All fields are required");
+  if (!username || !email || !password) {
+    throw new ApiError(400, "All fields are required");
   }
 
   const existedUser = await User.findOne({ email });
-
   if (existedUser) {
-    throw new ApiError(409, "User already exists with this email");
+    throw new ApiError(409, "User already exists");
   }
 
-  const user = await User.create({
-    username,
-    email,
-    password,
-  });
+  const user = await User.create({ username, email, password });
+  await redisClient.del(process.env.USERS_CACHE_KEY);
 
-  const createdUser = await User.findById(user._id).select(
-    "-password -refreshToken"
-  );
-
-  if (!createdUser) {
-    throw new ApiError(500, "Something went wrong while registering user");
-  }
-
-  return res
-    .status(201)
-    .json(new ApiResponse(200, "User registered successfully", createdUser));
+  res.status(201).json(new ApiResponse(201, "User registered", user));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -117,18 +101,6 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User logged out successfully", {}));
 });
 
-const getAllUsers = asyncHandler(async (req, res) => {
-  const users = await User.find().select("-password -refreshToken");
-
-  if (!users || users.length === 0) {
-    throw new ApiError(404, "No users found");
-  }
-
-  res
-    .status(200)
-    .json(new ApiResponse(200, "All users fetched successfully", users));
-});
-
 const getProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     "-password -refreshToken"
@@ -143,4 +115,58 @@ const getProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User profile fetched successfully", user));
 });
 
-export { registerUser, loginUser, logoutUser, getAllUsers, getProfile };
+const getAllUsers = asyncHandler(async (req, res) => {
+  const cachedUsers = await redisClient.get(process.env.USERS_CACHE_KEY);
+  if (cachedUsers) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, "All users (from cache)", JSON.parse(cachedUsers))
+      );
+  }
+
+  const users = await User.find().select("-password -refreshToken");
+  if (!users || users.length === 0) {
+    throw new ApiError(404, "No users found");
+  }
+
+  await redisClient.setEx(cacheKey, 3600, JSON.stringify(users)); // 1hr expiry
+  res
+    .status(200)
+    .json(new ApiResponse(200, "All users fetched successfully", users));
+});
+
+const updateUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { username, email, age } = req.body;
+
+  const updatedUser = await User.findByIdAndUpdate(
+    id,
+    { username, email, age },
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) throw new ApiError(404, "User not found");
+
+  await redisClient.del(process.env.USERS_CACHE_KEY);
+  res.status(200).json(new ApiResponse(200, "User updated", updatedUser));
+});
+
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const deletedUser = await User.findByIdAndDelete(id);
+  if (!deletedUser) throw new ApiError(404, "User not found");
+
+  await redisClient.del(process.env.USERS_CACHE_KEY);
+  res.status(200).json(new ApiResponse(200, "User deleted", deletedUser));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  getAllUsers,
+  getProfile,
+  updateUser,
+  deleteUser,
+};
