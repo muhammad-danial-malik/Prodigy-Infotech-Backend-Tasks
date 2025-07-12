@@ -1,5 +1,8 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import redisClient from "./config/redisClient.js";
+
+await redisClient.connect();
 
 const app = express();
 
