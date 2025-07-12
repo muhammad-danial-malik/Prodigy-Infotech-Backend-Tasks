@@ -5,6 +5,8 @@ import {
   logoutUser,
   getAllUsers,
   getProfile,
+  updateUser,
+  deleteUser,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import authorizeRoles from "../middlewares/authorizeRole.middleware.js";
@@ -16,8 +18,13 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 // Protected routes
-router.post("/logout", verifyJWT, logoutUser);
-router.get("/profile", verifyJWT, getProfile);
-router.get("/", verifyJWT, authorizeRoles("admin"), getAllUsers);
+router.use(verifyJWT);
+
+router.post("/logout", logoutUser);
+router.get("/profile", getProfile);
+router.get("/", authorizeRoles("admin"), getAllUsers);
+
+router.patch("/:id", authorizeRoles("admin"), updateUser);
+router.delete("/:id", authorizeRoles("admin"), deleteUser);
 
 export default router;

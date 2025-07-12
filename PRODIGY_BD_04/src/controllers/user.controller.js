@@ -1,11 +1,13 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
-import User from "../models/user.model.js";
 import { ApiError } from "../utils/apiError.js";
 import { ApiResponse } from "../utils/apiResponse.js";
+import redisClient from "../config/redisClient.js";
+import User from "../models/user.model.js";
 
 const cookiesOptions = {
   httpOnly: true,
   secure: true,
+  sameSite: "None",
 };
 
 const generateAccessAndRefreshToken = async (userId) => {
